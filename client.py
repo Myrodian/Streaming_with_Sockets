@@ -12,7 +12,7 @@ try:
 
     # Envia a mensagem
     print(f"Enviando: {message}")
-    sent = udp_socket.sendto(message, server_address)
+    sent = udp_socket.sendto(message.encode(), server_address)
 
     # Recebe a resposta (opcional, dependendo do servidor)
     print("Aguardando resposta...")
