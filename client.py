@@ -1,24 +1,38 @@
-import socket
 
+# This is client code to receive video frames over UDP
+import cv2, imutils, socket
+import numpy as np
+import time
+import base64
 
-# Cria um socket UDP
-socket_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+BUFF_SIZE = 50000
+client_socket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
+client_socket.setsockopt(socket.SOL_SOCKET,socket.SO_RCVBUF,BUFF_SIZE)
+host_name = socket.gethostname()
+host_ip = 'LocalHost'#  socket.gethostbyname(host_name)
+print(host_ip)
+port = 12345
+message = b'ola'
 
-# Endereço e porta do servidor
-endereco_servidor = ("LocalHost", 12345)
-
+client_socket.sendto(message,(host_ip,port))
+fps,st,frames_to_count,cnt = (0,0,20,0)
 while True:
-
-    # Mensagem a ser enviada ao servidor
-    message = input("Digite a mensagem:")
-    # print(f"Enviando: {message}")
-    sent = socket_udp.sendto(message.encode(), endereco_servidor)
-
-    # Recebe a mensagem
-    data, addr = socket_udp.recvfrom(1024)  # 1024 é o buffer size
-    data = data.decode()
-    print(f"Recebido de {addr}: {data}")
-    
-    # print(socket.gethostbyaddr())
-      
+	packet,_ = client_socket.recvfrom(BUFF_SIZE)
+	data = base64.b64decode(packet,' /')
+	npdata = np.fromstring(data,dtype=np.uint8)
+	frame = cv2.imdecode(npdata,1)
+	frame = cv2.putText(frame,'FPS: '+str(fps),(10,40),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,0,255),2)
+	cv2.imshow("Recebendo video",frame)
+	key = cv2.waitKey(1) & 0xFF
+	if key == ord('q'):
+		client_socket.close()
+		break
+	if cnt == frames_to_count:
+		try:
+			fps = round(frames_to_count/(time.time()-st))
+			st=time.time()
+			cnt=0
+		except:
+			pass
+	cnt+=1
 
