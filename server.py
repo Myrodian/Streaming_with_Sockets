@@ -1,7 +1,10 @@
 import socket
 import _tkinter
-from PIL import Image
+import os
 
+size_file = os.path.getsize("./conteudo/Bear.mp4")
+print(size_file)
+BUFFER_SIZE = 10000
 # arquivo_a_ser_enviado = Image.open('.\\conteudo\\liminha.jpg')
 # Cria um socket UDP
 socket_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -16,16 +19,24 @@ print(f"Servidor UDP está rodando na porta {endereco_servidor[1]}")
 print("Aguardando mensagens...")
 while True:
     # recebendo mensagem
-    data, addr = socket_udp.recvfrom(1024)  # 1024 é o buffer size
+    data, addr = socket_udp.recvfrom(10000)  # 1024 é o buffer size
     data = data.decode()
-    print(f"Recebido de {addr}: {data}")
+    print("recebido: " + data)
+    if data == "envia":
+        with open("./conteudo/Bear.mp4", "rb") as arquivo:
+            while True:
+                bites = arquivo.read(BUFFER_SIZE)
+                print(bites)
+                if not bites:
+                    break
+                socket_udp.sendto(bites, addr)
+        print("arquivo enviado!")
+
+    # print(f"Recebido de {addr}: {data}")
     
     # mandando mensagem
-    message = input("Digite a mensagem:")
-    sent = socket_udp.sendto(message.encode(), addr)
+    # message = input("Digite a mensagem:")
+    # sent = socket_udp.sendto(message.encode(), addr)
     
-    # if data == 1:
-    #     print("antes")
-    #     udp_socket.sendto(arquivo_a_ser_enviado, endereco_servidor)
-    #     print("depois")
+    
    
