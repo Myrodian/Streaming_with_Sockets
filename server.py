@@ -2,7 +2,9 @@ import socket
 import os
 import time
 BUFFER_SIZE = 1024
+SHIPPING_SIZE = 10
 
+i = 0
 caminho_video = "./conteudo/Bear.mp4"
 tamanho_arquivo = os.path.getsize(caminho_video)
 print(tamanho_arquivo)
@@ -31,7 +33,13 @@ while True:
                 if not bites:
                     break
                 socket_udp.sendto(bites, addr)
-                time.sleep(0.01)
+                
+                i += 1
+
+                if i == SHIPPING_SIZE:
+                    if socket_udp.recvfrom(BUFFER_SIZE) == 1:
+                        i = 0
+
         # Marcador de fim de pacote
         socket_udp.sendto(b'EOF', addr)
         print("arquivo enviado!")
