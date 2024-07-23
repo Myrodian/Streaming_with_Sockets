@@ -3,6 +3,10 @@ import os
 
 BUFFER_SIZE = 1024
 
+caminho_video = "./conteudo/Bear.mp4"
+tamanho_arquivo = os.path.getsize(caminho_video)
+print(tamanho_arquivo)
+
 # Cria um socket UDP
 socket_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
@@ -21,7 +25,7 @@ while True:
     data = data.decode()
     print("recebido: " + data)
     if data == "envia":
-        with open("./conteudo/Bear.mp4", "rb") as arquivo:
+        with open(caminho_video, "rb") as arquivo:
             while True:
                 bites = arquivo.read(BUFFER_SIZE)
                 if not bites:
