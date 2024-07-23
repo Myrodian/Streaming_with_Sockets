@@ -2,7 +2,7 @@ import socket
 import os
 import time
 BUFFER_SIZE = 1024
-SHIPPING_SIZE = 10
+SHIPPING_SIZE = 5
 
 i = 0
 caminho_video = "./conteudo/Bear.mp4"
@@ -13,7 +13,7 @@ print(tamanho_arquivo)
 socket_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 # Endereço e porta do servidor
-endereco_servidor = ('LocalHost', 12345)
+endereco_servidor = ('localhost', 12345)
 
 # Liga o socket ao endereço e porta
 socket_udp.bind(endereco_servidor)
@@ -25,21 +25,28 @@ while True:
     # recebendo mensagem
     message, addr = socket_udp.recvfrom(BUFFER_SIZE)  # 1024 é o buffer size
     message = message.decode()
-    print("recebido: " + message)
+    print(f"recebido:{message}")
+    
     if message == "envia":
         with open(caminho_video, "rb") as arquivo:
+            f = 0
             while True:
                 bites = arquivo.read(BUFFER_SIZE)
                 if not bites:
+                    socket_udp.sendto(b'EOF', addr) # Marcador de fim de pacote
                     break
                 socket_udp.sendto(bites, addr)
                 
                 i += 1
-
+                
                 if i == SHIPPING_SIZE:
-                    if socket_udp.recvfrom(BUFFER_SIZE) == 1:
+                    controle, addr = socket_udp.recvfrom(BUFFER_SIZE)
+                    controle = controle.decode()
+                    # print("chegando dps do shipping")
+                    if controle == '1':
+                        print(f"enviando remessa {f} para o endereço {addr}")
                         i = 0
+                        f += 1
 
-        # Marcador de fim de pacote
-        socket_udp.sendto(b'EOF', addr)
+        
         print("arquivo enviado!")
