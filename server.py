@@ -1,6 +1,6 @@
 import socket
 import os
-
+import time
 BUFFER_SIZE = 1024
 
 caminho_video = "./conteudo/Bear.mp4"
@@ -21,16 +21,17 @@ print("Aguardando mensagens...")
 
 while True:
     # recebendo mensagem
-    data, addr = socket_udp.recvfrom(BUFFER_SIZE)  # 1024 é o buffer size
-    data = data.decode()
-    print("recebido: " + data)
-    if data == "envia":
+    message, addr = socket_udp.recvfrom(BUFFER_SIZE)  # 1024 é o buffer size
+    message = message.decode()
+    print("recebido: " + message)
+    if message == "envia":
         with open(caminho_video, "rb") as arquivo:
             while True:
                 bites = arquivo.read(BUFFER_SIZE)
                 if not bites:
                     break
                 socket_udp.sendto(bites, addr)
-        # Enviar um pacote final vazio para indicar o término da transmissão
-        socket_udp.sendto(b''.ljust(BUFFER_SIZE), addr)
+                time.sleep(0.01)
+        # Marcador de fim de pacote
+        socket_udp.sendto(b'EOF', addr)
         print("arquivo enviado!")

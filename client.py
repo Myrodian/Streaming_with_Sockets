@@ -1,6 +1,5 @@
 import socket
 import subprocess
-
 BUFFER_SIZE = 1024
 caminho_vlc = 'D:\\Arquivos_e_Programas\\VLC\\vlc.exe'
 # Cria um socket UDP
@@ -18,10 +17,12 @@ while True:
     if message == "envia":
         while True:
             data, addr = socket_udp.recvfrom(BUFFER_SIZE)
-            if not data.strip(b'\x00'):
-                break
+            if data.strip(b'\x00'):
+                if data == b'EOF':
+                    break
             envia_video.stdin.write(data)
             cont += 1
             print(f"pacote {cont}")
+            
         print(f"foram necessarios {cont} pacotes para mandar todo o arquivo")
        
