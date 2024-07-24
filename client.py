@@ -1,106 +1,50 @@
+import socket
+import subprocess
 
-# Welcome to PyShine
-# This is client code to receive video and audio frames over UDP/TCP
+BUFFER_SIZE = 1024
+SHIPPING_SIZE = 5
 
-import cv2, imutils, socket
-import numpy as np
-import time, os
-import base64
-import threading, wave, pyaudio,pickle,struct
-# For details visit pyshine.com
-BUFF_SIZE = 65536
+caminho_vlc = 'D:\\Arquivos_e_Programas\\VLC\\vlc.exe'
+# caminho_vlc = 'C:\\Program Files (x86)\\VideoLAN\VLC\\vlc.exe'
+# Cria um socket UDP
+socket_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
-BREAK = False
-client_socket = socket.socket(socket.AF_INET,socket.SOCK_DGRAM)
-client_socket.setsockopt(socket.SOL_SOCKET,socket.SO_RCVBUF,BUFF_SIZE)
-host_name = socket.gethostname()
-host_ip = 'LocalHost'#  socket.gethostbyname(host_name)
-print(host_ip)
-port = 12345
-message = b'Hello'
+# Endereço e porta do servidor
+endereco_servidor = ("localhost", 12345)
 
-client_socket.sendto(message,(host_ip,port))
+def fim_arquivo(data: bytes):
+    if data.strip(b'\x00'):
+        if data == b'EOF':
+            return True
+    return False
 
-def video_stream():
-	
-	cv2.namedWindow('Recebendo video')        
-	cv2.moveWindow('Recebendo video', 10,360) 
-	fps,st,frames_to_count,cnt = (0,0,20,0)
-	while True:
-		packet,_ = client_socket.recvfrom(BUFF_SIZE)
-		data = base64.b64decode(packet,' /')
-		npdata = np.fromstring(data,dtype=np.uint8)
-	
-		frame = cv2.imdecode(npdata,1)
-		frame = cv2.putText(frame,'FPS: '+str(fps),(10,40),cv2.FONT_HERSHEY_SIMPLEX,0.7,(0,0,255),2)
-		cv2.imshow("Recebendo video",frame)
-		key = cv2.waitKey(1) & 0xFF
-	
-		if key == ord('q'):
-			client_socket.close()
-			os._exit(1)
-			break
+def pedido():
+    cont = 0
+    i = 0
+    while True:  
+        data, addr = socket_udp.recvfrom(BUFFER_SIZE) # novos dados
 
-		if cnt == frames_to_count:
-			try:
-				fps = round(frames_to_count/(time.time()-st))
-				st=time.time()
-				cnt=0
-			except:
-				pass
-		cnt+=1
-    client_socket.close()
-    cv2.destroyAllWindows()
-			
-	 
+        if fim_arquivo(data): # caso de arquivo vazio
+            break
 
+        i += 1
 
-def audio_stream():
-	
-	p = pyaudio.PyAudio()
-	CHUNK = 1024
-	stream = p.open(format=p.get_format_from_width(2),
-					channels=2,
-					rate=44100,
-					output=True,
-					frames_per_buffer=CHUNK)
-					
-	# create socket
-	client_socket = socket.socket(socket.AF_INET,socket.SOCK_STREAM)
-	socket_address = (host_ip,port-1)
-	print('server listening at',socket_address)
-	client_socket.connect(socket_address) 
-	print("CLIENT CONNECTED TO",socket_address)
-	data = b""
-	payload_size = struct.calcsize("Q")
-	while True:
-		try:
-			while len(data) < payload_size:
-				packet = client_socket.recv(4*1024) # 4K
-				if not packet: break
-				data+=packet
-			packed_msg_size = data[:payload_size]
-			data = data[payload_size:]
-			msg_size = struct.unpack("Q",packed_msg_size)[0]
-			while len(data) < msg_size:
-				data += client_socket.recv(4*1024)
-			frame_data = data[:msg_size]
-			data  = data[msg_size:]
-			frame = pickle.loads(frame_data)
-			stream.write(frame)
+        if i == SHIPPING_SIZE: # controle de entrega
+            i = 0 # se prepara para nova remessa
+            socket_udp.sendto(b'1', addr) # avisa que pode receber mais
+                
+        envia_video.stdin.write(data) # salvando novos dados
 
-		except:
-			
-			break
+        cont += 1
+        print(f"pacote {cont}")
+    return cont
 
-	client_socket.close()
-	print('Audio closed',BREAK)
-	os._exit(1)
-	
-
-
-from concurrent.futures import ThreadPoolExecutor
-with ThreadPoolExecutor(max_workers=2) as executor:
-	executor.submit(audio_stream)
-	executor.submit(video_stream)
-
+while True:
+    # Mensagem a ser enviada ao servidor
+    message = input("Digite a mensagem:")
+    socket_udp.sendto(message.encode(), endereco_servidor)
+    if message == "envia":
+        envia_video = subprocess.Popen([caminho_vlc,'-', '--input-title-format', "Streaming Video"],stdin = subprocess.PIPE,)
+        cont = pedido() # trocar nome
+    print(f"foram necessarios {cont} pacotes para mandar todo o arquivo")
+       
