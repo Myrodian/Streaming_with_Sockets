@@ -3,7 +3,7 @@ import subprocess
 
 BUFFER_SIZE = 1024
 SHIPPING_SIZE = 5
-
+# push por terminal
 # caminho_vlc = 'D:\\Arquivos_e_Programas\\VLC\\vlc.exe'
 caminho_vlc = 'C:\\Program Files (x86)\\VideoLAN\VLC\\vlc.exe'
 # Cria um socket UDP

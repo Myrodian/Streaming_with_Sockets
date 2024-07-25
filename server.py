@@ -5,7 +5,7 @@ import math
 import time
 BUFFER_SIZE = 1024
 SHIPPING_SIZE = 5
-
+# push por terminal
 # calcula o numero de pacotes(pkg) que um tamanho de arquivo pode ser dividido pelo buffer 
 def pkg_num(f_size: int) -> int:
     return math.ceil(f_size/BUFFER_SIZE)
