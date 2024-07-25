@@ -6,15 +6,23 @@ import time
 BUFFER_SIZE = 1024
 SHIPPING_SIZE = 5
 
-# calcula o numero de partes que um tamanho size pode ser dividido pelo buffer 
-def header_size(f_size) -> int:
+# calcula o numero de pacotes(pkg) que um tamanho de arquivo pode ser dividido pelo buffer 
+def pkg_num(f_size: int) -> int:
     return math.ceil(f_size/BUFFER_SIZE)
+
+# calcula o numero de bytes p/ um numero x
+def bytes_needed(x: int) -> int:
+    if x == 0:
+        return 1  # Um byte é suficiente para armazenar o número 0
+    # Calcular o número de bytes necessários (int -> bit -> byte)
+    return math.ceil(x.bit_length() / 8) 
 
 # calcula e envia para o cliente o tamanho do cabecaho de identificadores
 # o cliente deve esperar o seervidor enviar dentro de um tempo limite ( 5s talvez ), se não, pedir de novo
 def send_header_size(f_size, addr):
     # cliente precisa esperar 1 ciclo antes de começar a tocar o video
-    socket_udp.sendto(header_size(f_size).to_bytes(4, byteorder='big'), addr)
+    socket_udp.sendto(bytes_needed(pkg_num(f_size)), addr)
+    print("header size: "+ bytes_needed(pkg_num(f_size)))
 
 # travado até receber um codigo de liberacao
 def stop():
@@ -26,7 +34,6 @@ def stop():
 
 i = 0
 caminho_video = "EOF"
-caminho_video = "./conteudo/Bear.mp4"
 
 
 # Cria um socket UDP
@@ -51,9 +58,10 @@ while True:
     if message == "envia":
         caminho_video = "./conteudo/Bear.mp4"
     
-    tamanho_arquivo = os.path.getsize(caminho_video)
+    # pega tamanho do video escolhido
+    tamanho_arquivo = os.path.getsize( caminho_video)
     
-    print(tamanho_arquivo)
+    print("arqv tamanho: "+tamanho_arquivo)
 
     send_header_size(tamanho_arquivo, addr)
 
