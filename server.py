@@ -1,5 +1,6 @@
 import socket
 import os
+import sys
 import time
 BUFFER_SIZE = 1024
 SHIPPING_SIZE = 5
@@ -42,9 +43,10 @@ while True:
                 if i == SHIPPING_SIZE:
                     controle, addr = socket_udp.recvfrom(BUFFER_SIZE)
                     controle = controle.decode()
+                    # print(sys.getsizeof(controle))
                     # print("chegando dps do shipping")
                     if controle == '1':
-                        print(f"enviando remessa {f} para o endereço {addr}")
+                        # print(f"enviando remessa {f} para o endereço {addr}")
                         i = 0
                         f += 1
 
