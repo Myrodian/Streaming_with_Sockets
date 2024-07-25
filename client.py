@@ -26,8 +26,11 @@ def pedido():
 
     # tentativa de conexao
     while True:  
-
+        
         data, addr = socket_udp.recvfrom(BUFFER_SIZE) # novos dados
+        # print(int.from_bytes(data)) # esta recebendo corretamente o numero de pacotes, 
+        # daqui para frente um pacote de 1024 bytes vai ter até 1271, em bytes, como cabecalho
+        input(" Se der certo dá errado :)")
 
         if fim_arquivo(data): # caso de arquivo vazio
             print(" Entrega Finalizada pelo servidor !")
