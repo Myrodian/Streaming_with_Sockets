@@ -1,7 +1,7 @@
 import socket
 import subprocess
 
-BUFFER_SIZE = 1024 * 2
+BUFFER_SIZE = 3076 * 2
 caminho_vlc = 'D:\\Arquivos_e_Programas\\VLC\\vlc.exe'
 # caminho_vlc = 'C:\\Program Files (x86)\\VideoLAN\\VLC\\vlc.exe'
 

@@ -3,7 +3,7 @@ import os
 import sys
 import math
 import time
-BUFFER_SIZE = 1024
+BUFFER_SIZE = 3076
 video_array = ["./conteudo/BigBuckBunny.mp4","./conteudo/Bear.mp4", "./conteudo/Wildlife.mp4"]
 # video_array[] = "EOF"
 def stop():
@@ -59,6 +59,7 @@ try:
                             controle = controle.decode()
                             if controle == '1':
                                 f += 1
+                                # tinha linhas aqui, mas foi tirado após remover o shipping_size
                         except socket.error as e:
                             print(f"Erro ao receber controle: {e}")
                             break
