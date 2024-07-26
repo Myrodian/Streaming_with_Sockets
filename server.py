@@ -61,6 +61,7 @@ try:
                             controle = controle.decode()
                             if controle == '1':
                                 f += 1
+                                # tinha linhas aqui, mas foi tirado após remover o shipping_size
                         except socket.error as e:
                             print(f"Erro ao receber controle: {e}")
                             break
