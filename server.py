@@ -3,8 +3,9 @@ import os
 import sys
 import math
 import time
+
 BUFFER_SIZE = 1024
-video_array = ["./conteudo/BigBuckBunny.mp4","./conteudo/Bear.mp4", "./conteudo/Wildlife.mp4"]
+video_array = ["./Conteudo/BigBuckBunny.mp4","./Conteudo/Bear.mp4","./Conteudo/Wildlife.mp4"]
 # video_array[] = "EOF"
 def stop():
     try:
@@ -31,12 +32,13 @@ try:
 
             # Seletor de vídeo
             if message == "envia":
+                message = 0
             # Pega tamanho do vídeo escolhido
                 try:
-                    tamanho_arquivo = os.path.getsize(video_array[0])
+                    tamanho_arquivo = os.path.getsize(video_array[message])
                     print(f"Tamanho do arquivo: {tamanho_arquivo} bytes\nSerão necessarios {int(tamanho_arquivo/BUFFER_SIZE)+1} pacotes")
                 except FileNotFoundError:
-                    print(f"Erro: Arquivo '{video_array[0]}' não encontrado.")
+                    print(f"Erro: Arquivo '{video_array[message]}' não encontrado.")
                     continue
                 except OSError as e:
                     print(f"Erro ao acessar o arquivo: {e}")

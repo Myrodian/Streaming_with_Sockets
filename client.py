@@ -2,8 +2,8 @@ import socket
 import subprocess
 
 BUFFER_SIZE = 1024 * 2
-caminho_vlc = 'D:\\Arquivos_e_Programas\\VLC\\vlc.exe'
-# caminho_vlc = 'C:\\Program Files (x86)\\VideoLAN\\VLC\\vlc.exe'
+# caminho_vlc = 'D:\\Arquivos_e_Programas\\VLC\\vlc.exe'
+caminho_vlc = 'C:\\Program Files (x86)\\VideoLAN\\VLC\\vlc.exe'
 
 # Cria um socket UDP
 socket_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -20,7 +20,7 @@ def fim_arquivo(data: bytes):
 def pedido():
     cont = 0
     i = 0
-    # vid_buff = b''
+    # vid_buff = bytearray(b'')
     vid_buff = []
     while True:
         try:
@@ -30,17 +30,22 @@ def pedido():
             if fim_arquivo(data):  # caso de arquivo vazio
                 break
             
-            # vid_buff += data
-
-            # if cont > 50:
-            #     envia_video.stdin.write(vid_buff) # salvando novos dados
-            
             vid_buff.append(data)
-            if i != ((len(vid_buff))-50):
+            # print(vid_buff)
+
+
+            # tem que passar isso para uma thread
+            if cont > 2000:
                 while i != ((len(vid_buff))-1):
-                    envia_video.stdin.write(vid_buff[i]) # salvando novos dados 
+                    envia_video.stdin.write(vid_buff[i]) # salvando novos dados
                     i += 1
-                # i= 0
+            
+            # vid_buff.append(data)
+            # if i != ((len(vid_buff))-50):
+            #     while i != ((len(vid_buff))-1):
+            #         envia_video.stdin.write(vid_buff[i]) # salvando novos dados 
+            #         i += 1
+            #     # i= 0
             socket_udp.sendto(b'1', addr)  # avisa que pode receber mais
             
             cont += 1
