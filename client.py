@@ -12,27 +12,39 @@ socket_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 endereco_servidor = ("localhost", 12345)
 
 def fim_arquivo(data: bytes):
-    return data == b'EOF'
+    if data == b'EOF':
+        return True
+    else:
+        return False
 
 def pedido():
     cont = 0
     i = 0
+    vid_buff = b''
+    # vid_buff = []
     while True:
         try:
-            for i in range(5):
-                data = []
-                data[i], addr = socket_udp.recvfrom(BUFFER_SIZE)  # novos dados
-                
-                if fim_arquivo(data[i]):  # caso de arquivo vazio
-                    break
+            data, addr = socket_udp.recvfrom(BUFFER_SIZE)  # novos dados
             
-            for i in range(5):
-                envia_video.stdin.write(data[i])  # salvando novos dados
+              
+            if fim_arquivo(data):  # caso de arquivo vazio
+                break
             
+            vid_buff += data
+
+            if cont > 50:
+                envia_video.stdin.write(vid_buff) # salvando novos dados
+            
+            # vid_buff.append(data)
+            # if i != ((len(vid_buff))-50):
+            #     while i != ((len(vid_buff))-1):
+            #         envia_video.stdin.write(vid_buff[i]) # salvando novos dados 
+            #         i += 1
+            #     i= 0
             socket_udp.sendto(b'1', addr)  # avisa que pode receber mais
             
             cont += 1
-            print(f"\rpacote {cont}", end='')
+            print(f"\rPacote {cont} recebido!", end='')
 
         except BrokenPipeError:
             print("\nErro: Broken pipe. O VLC fechou a conexão.")
@@ -51,7 +63,7 @@ while True:
     if message == "envia":
         try:
             envia_video = subprocess.Popen([caminho_vlc, '-', '--input-title-format', 'Streaming Video',
-                                              '--network-caching=0', '--file-caching=0','--live-caching=0','--clock-jitter=0','-vvv'],
+                                              '--network-caching=0', '--file-caching=0'],
                                            stdin=subprocess.PIPE)
             cont = pedido()
             envia_video.stdin.close()

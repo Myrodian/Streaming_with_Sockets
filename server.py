@@ -5,17 +5,7 @@ import math
 import time
 BUFFER_SIZE = 30072
 video_array = ["./conteudo/BigBuckBunny.mp4","./conteudo/Bear.mp4"]
-
-# travado até receber um codigo de liberacao
-def stop():
-    controle, addr = socket_udp.recvfrom(BUFFER_SIZE)
-    # print(sys.getsizeof(controle))
-    # print("chegando dps do shipping")
-    if (controle.decode()) == '1':
-        return True
-    
 # video_array[] = "EOF"
-
 def stop():
     try:
         controle, addr = socket_udp.recvfrom(BUFFER_SIZE)
@@ -24,7 +14,6 @@ def stop():
     except socket.error as e:
         print(f"Erro ao receber controle: {e}")
         return False
-
 try:
     socket_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # Cria um socket UDP
     endereco_servidor = ('localhost', 12345)  # Endereço e porta do servidor
@@ -55,14 +44,16 @@ try:
 
                 with open(video_array[0], "rb") as arquivo:
                     f = 0
+                    vezes = 0
                     while True:
                         # Bites devem ser compostos por: cabeçalho + bytes de vídeo
-                        bites = arquivo.read(BUFFER_SIZE - 1)
+                        bites = arquivo.read(BUFFER_SIZE)
                         if not bites:
                             socket_udp.sendto(b'EOF', addr)  # Marcador de fim de pacote
                             break
-                        socket_udp.sendto(b'' + bites, addr)
-
+                        socket_udp.sendto(bites, addr) 
+                        vezes += 1                       
+                        print(f'\rPacote {vezes} enviado!', end='')
                         try:
                             controle, addr = socket_udp.recvfrom(BUFFER_SIZE)
                             controle = controle.decode()
