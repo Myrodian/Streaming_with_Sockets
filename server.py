@@ -3,7 +3,7 @@ import os
 import sys
 import math
 import time
-BUFFER_SIZE = 30072
+BUFFER_SIZE = 1467
 video_array = ["./conteudo/BigBuckBunny.mp4","./conteudo/Bear.mp4"]
 # video_array[] = "EOF"
 def stop():
