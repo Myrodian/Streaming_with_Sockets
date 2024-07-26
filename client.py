@@ -1,7 +1,7 @@
 import socket
 import subprocess
 
-BUFFER_SIZE = 1467 * 2
+BUFFER_SIZE = 1024 * 2
 caminho_vlc = 'D:\\Arquivos_e_Programas\\VLC\\vlc.exe'
 # caminho_vlc = 'C:\\Program Files (x86)\\VideoLAN\\VLC\\vlc.exe'
 
@@ -76,6 +76,6 @@ while True:
         except Exception as e:
             print(f"Erro ao iniciar o VLC: {e}")
 
-    print(f"Foram necessários {cont} pacotes para mandar todo o arquivo")
+    print(f"\nForam necessários {cont} pacotes para mandar todo o arquivo")
 
 socket_udp.close()

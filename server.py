@@ -3,8 +3,8 @@ import os
 import sys
 import math
 import time
-BUFFER_SIZE = 1467
-video_array = ["./conteudo/BigBuckBunny.mp4","./conteudo/Bear.mp4"]
+BUFFER_SIZE = 1024
+video_array = ["./conteudo/BigBuckBunny.mp4","./conteudo/Bear.mp4", "./conteudo/Wildlife.mp4"]
 # video_array[] = "EOF"
 def stop():
     try:
@@ -34,7 +34,7 @@ try:
             # Pega tamanho do vídeo escolhido
                 try:
                     tamanho_arquivo = os.path.getsize(video_array[0])
-                    print(f"Tamanho do arquivo: {tamanho_arquivo} bytes")
+                    print(f"Tamanho do arquivo: {tamanho_arquivo} bytes\nSerão necessarios {int(tamanho_arquivo/BUFFER_SIZE)+1} pacotes")
                 except FileNotFoundError:
                     print(f"Erro: Arquivo '{video_array[0]}' não encontrado.")
                     continue
@@ -46,7 +46,7 @@ try:
                     f = 0
                     vezes = 0
                     while True:
-                        # Bites devem ser compostos por: cabeçalho + bytes de vídeo
+                        # Bites devem ser compostos por: bytes de vídeo
                         bites = arquivo.read(BUFFER_SIZE)
                         if not bites:
                             socket_udp.sendto(b'EOF', addr)  # Marcador de fim de pacote
@@ -62,7 +62,7 @@ try:
                         except socket.error as e:
                             print(f"Erro ao receber controle: {e}")
                             break
-                print("Arquivo enviado!")
+                print("\nArquivo enviado!")
 
         except socket.error as e:
             print(f"Erro ao receber mensagem: {e}")
