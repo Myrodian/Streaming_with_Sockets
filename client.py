@@ -1,7 +1,9 @@
 import socket
 import subprocess
 
+VIDEO_LIST_SIZE = 3
 BUFFER_SIZE = 1024 * 2
+WRITE_BUFF = 1024 * 4
 # caminho_vlc = 'D:\\Arquivos_e_Programas\\VLC\\vlc.exe'
 caminho_vlc = 'C:\\Program Files (x86)\\VideoLAN\\VLC\\vlc.exe'
 
@@ -37,17 +39,20 @@ def pedido():
             
             
             
-            # calcular bite rate
+            # calcular byte rate urgente
 
 
 
             # tem que passar isso para uma thread
-            if (cont % 1000 == 0) and cont > 0: # 1000 pacotes de 1024 bytes da 1.024.000/4096 = 500 writes
-                
-                while (i + 4096) <= ((len(vid_buff)) - 1):
-                    pedaco = b''.join(vid_buff[i:i+4096])
-                    envia_video.stdin.write(pedaco) # salvando novos dados
-                    i += 4096
+
+            # tempo de relogio
+            
+            if (cont % 1000 == 0) and cont > 0: # 1000 pacotes de 1024 bytes da 1.024.000/4096 = 250 writes
+                # ler em quantidade de bytes
+                while (i + WRITE_BUFF) <= ((len(vid_buff)) - 1):
+                    slice = b''.join(vid_buff[i:i+WRITE_BUFF])
+                    envia_video.stdin.write(slice) # salvando novos dados
+                    i += WRITE_BUFF
                 # reiniciar buffer caso cheio
             
             # vid_buff.append(data)
@@ -72,11 +77,13 @@ def pedido():
     return cont
 
 while True:
+    message = ''
     # Mensagem a ser enviada ao servidor
-    message = input("Digite a mensagem:")
-    socket_udp.sendto(message.encode(), endereco_servidor)
+    message = input("Escolha o video [ 0 - BBB | 1 - Bear | 2 - WildLife ]:")
+    if message in range(VIDEO_LIST_SIZE):
 
-    if message == "envia":
+        socket_udp.sendto(message.encode(), endereco_servidor)
+
         try:
             envia_video = subprocess.Popen([caminho_vlc, '-', '--input-title-format', 'Streaming Video',
                                               '--network-caching=0', '--file-caching=0'],
@@ -91,7 +98,8 @@ while True:
 
         except Exception as e:
             print(f"Erro ao iniciar o VLC: {e}")
-
+    else: 
+        print("valor {message} inválido !, tente novamente")
     print(f"\nForam necessários {cont} pacotes para mandar todo o arquivo")
 
 socket_udp.close()

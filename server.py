@@ -3,10 +3,12 @@ import os
 import sys
 import math
 import time
+import pyffmpeg
 
 BUFFER_SIZE = 1024
 video_array = ["./Conteudo/BigBuckBunny.mp4","./Conteudo/Bear.mp4","./Conteudo/Wildlife.mp4"]
 # video_array[] = "EOF"
+
 def stop():
     try:
         controle, addr = socket_udp.recvfrom(BUFFER_SIZE)
@@ -30,41 +32,38 @@ try:
             message = message.decode()
             print(f"Recebido: {message}")
 
-            # Seletor de vídeo
-            if message == "envia":
-                message = 0
             # Pega tamanho do vídeo escolhido
-                try:
-                    tamanho_arquivo = os.path.getsize(video_array[message])
-                    print(f"Tamanho do arquivo: {tamanho_arquivo} bytes\nSerão necessarios {int(tamanho_arquivo/BUFFER_SIZE)+1} pacotes")
-                except FileNotFoundError:
-                    print(f"Erro: Arquivo '{video_array[message]}' não encontrado.")
-                    continue
-                except OSError as e:
-                    print(f"Erro ao acessar o arquivo: {e}")
-                    continue
+            try:
+                tamanho_arquivo = os.path.getsize(video_array[message])
+                print(f"Tamanho do arquivo: {tamanho_arquivo} bytes\nSerão necessarios {int(tamanho_arquivo/BUFFER_SIZE)+1} pacotes")
+            except FileNotFoundError:
+                print(f"Erro: Arquivo '{video_array[message]}' não encontrado.")
+                continue
+            except OSError as e:
+                print(f"Erro ao acessar o arquivo: {e}")
+                continue
 
-                with open(video_array[0], "rb") as arquivo:
-                    f = 0
-                    vezes = 0
-                    while True:
-                        # Bites devem ser compostos por: bytes de vídeo
-                        bites = arquivo.read(BUFFER_SIZE)
-                        if not bites:
-                            socket_udp.sendto(b'EOF', addr)  # Marcador de fim de pacote
-                            break
-                        socket_udp.sendto(bites, addr) 
-                        vezes += 1                       
-                        print(f'\rPacote {vezes} enviado!', end='')
-                        try:
-                            controle, addr = socket_udp.recvfrom(BUFFER_SIZE)
-                            controle = controle.decode()
-                            if controle == '1':
-                                f += 1
-                                # tinha linhas aqui, mas foi tirado após remover o shipping_size
-                        except socket.error as e:
-                            print(f"Erro ao receber controle: {e}")
-                            break
+            with open(video_array[0], "rb") as arquivo:
+                f = 0
+                vezes = 0
+                while True:
+                    # Bites devem ser compostos por: bytes de vídeo
+                    bites = arquivo.read(BUFFER_SIZE)
+                    if not bites:
+                        socket_udp.sendto(b'EOF', addr)  # Marcador de fim de pacote
+                        break
+                    socket_udp.sendto(bites, addr) 
+                    vezes += 1                       
+                    print(f'\rPacote {vezes} enviado!', end='')
+                    try:
+                        controle, addr = socket_udp.recvfrom(BUFFER_SIZE)
+                        controle = controle.decode()
+                        if controle == '1':
+                            f += 1
+                            # tinha linhas aqui, mas foi tirado após remover o shipping_size
+                    except socket.error as e:
+                        print(f"Erro ao receber controle: {e}")
+                        break
                 print("\nArquivo enviado!")
 
         except socket.error as e:
