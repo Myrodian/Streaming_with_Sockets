@@ -4,7 +4,6 @@ import subprocess
 VIDEO_LIST_SIZE = 3
 BUFFER_SIZE = 1024 * 2
 WRITE_BUFF = 1024 * 4
-# caminho_vlc = 'D:\\Arquivos_e_Programas\\VLC\\vlc.exe'
 caminho_vlc = 'C:\\Program Files (x86)\\VideoLAN\\VLC\\vlc.exe'
 
 # Cria um socket UDP
@@ -14,92 +13,53 @@ socket_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 endereco_servidor = ("localhost", 12345)
 
 def fim_arquivo(data: bytes):
-    if data == b'EOF':
-        return True
-    else:
-        return False
+    
+    return data == b'EOF'
 
 def pedido():
-    cont = 0
-
-    # verificar se cabe um video
-    i = 0
-    # vid_buff = b''
     vid_buff = []
-    while True:
-        try:
-            data, addr = socket_udp.recvfrom(BUFFER_SIZE)  # novos dados
-            print(f"\rPacote {cont} recebido!", end='')
-              
-            if fim_arquivo(data):  # caso de arquivo vazio
+    try:
+        while True:
+            data, addr = socket_udp.recvfrom(BUFFER_SIZE)  # Novos dados
+            if fim_arquivo(data):  # Caso de arquivo vazio
                 break
             
             vid_buff.append(data)
-            # print(vid_buff)
-            
-            
-            
-            # calcular byte rate urgente
 
+            # Processa e escreve dados no VLC conforme são recebidos
+            while vid_buff:
+                slice = b''.join(vid_buff)
+                envia_video.stdin.write(slice)
+                envia_video.stdin.flush()  # Garante que os dados sejam enviados ao VLC
+                vid_buff.clear()  # Limpa o buffer depois de escrever
 
+            socket_udp.sendto(b'1', addr)  # Avisa que pode receber mais
 
-            # tem que passar isso para uma thread
+    except BrokenPipeError:
+        print("\nErro: Broken pipe. O VLC fechou a conexão.")
+    except Exception as e:
+        print(f"\nErro inesperado: {e}")
 
-            # tempo de relogio
-            
-            if (cont % 1000 == 0) and cont > 0: # 1000 pacotes de 1024 bytes da 1.024.000/4096 = 250 writes
-                # ler em quantidade de bytes
-                while (i + WRITE_BUFF) <= ((len(vid_buff)) - 1):
-                    slice = b''.join(vid_buff[i:i+WRITE_BUFF])
-                    envia_video.stdin.write(slice) # salvando novos dados
-                    i += WRITE_BUFF
-                # reiniciar buffer caso cheio
-            
-            # vid_buff.append(data)
-            # if i != ((len(vid_buff))-50):
-            #     while i != ((len(vid_buff))-1):
-            #         envia_video.stdin.write(vid_buff[i]) # salvando novos dados 
-            #         i += 1
-            #     # i= 0
-            socket_udp.sendto(b'1', addr)  # avisa que pode receber mais
-            cont += 1
-
-            
-
-        except BrokenPipeError:
-            print("\nErro: Broken pipe. O VLC fechou a conexão.")
-            break
-        except Exception as e:
-            print(f"\nErro inesperado: {e}")
-            break
-    
-    # resetar buff
-    return cont
+    return len(vid_buff)
 
 while True:
-    message = ''
-    # Mensagem a ser enviada ao servidor
     message = input("Escolha o video [ 0 - BBB | 1 - Bear | 2 - WildLife ]:")
-    if message in range(VIDEO_LIST_SIZE):
-
+    if int(message) in range(VIDEO_LIST_SIZE):
         socket_udp.sendto(message.encode(), endereco_servidor)
 
         try:
             envia_video = subprocess.Popen([caminho_vlc, '-', '--input-title-format', 'Streaming Video',
-                                              '--network-caching=0', '--file-caching=0'],
+                                            '--network-caching=0', '--file-caching=0'],
                                            stdin=subprocess.PIPE)
             cont = pedido()
             envia_video.stdin.close()
             envia_video.wait()
 
-            # stdout, stderr = envia_video.communicate()
-            # print(f"stdout: {stdout.decode()}")
-            # print(f"stderr: {stderr.decode()}")
-
         except Exception as e:
             print(f"Erro ao iniciar o VLC: {e}")
     else: 
-        print("valor {message} inválido !, tente novamente")
+        print(f"Valor {message} inválido! Tente novamente.")
+
     print(f"\nForam necessários {cont} pacotes para mandar todo o arquivo")
 
 socket_udp.close()
