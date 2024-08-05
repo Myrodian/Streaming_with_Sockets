@@ -1,7 +1,5 @@
 import socket
 import os
-import sys
-import math
 import time
 import subprocess
 import json
@@ -30,14 +28,14 @@ def get_bit_rate(vid_path):
 def wait_message():
     
     try:
-            message, addr = socket_udp.recvfrom(BUFFER_SIZE)
-            message = message.decode()
-            return message, addr
+        message, addr = socket_udp.recvfrom(BUFFER_SIZE)
+        message = message.decode()
+        return message, addr
     except socket.error as e:
         print(f"Erro ao receber mensagem: {e}")
 
 try:
-    message = b''
+    # message = b''
     socket_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # Cria um socket UDP
     endereco_servidor = ('localhost', 12345)  # Endereço e porta do servidor
     socket_udp.bind(endereco_servidor)  # Liga o socket ao endereço e porta

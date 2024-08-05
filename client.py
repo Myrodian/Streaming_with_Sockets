@@ -5,16 +5,12 @@ VIDEO_LIST_SIZE = 3
 BUFFER_SIZE = 1024 * 2
 WRITE_BUFF = 1024 * 4
 caminho_vlc = 'C:\\Program Files (x86)\\VideoLAN\\VLC\\vlc.exe'
-
+# caminho_vlc = 'D:\\Arquivos_e_Programas\\VLC\\vlc.exe'
 # Cria um socket UDP
 socket_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
 
 # Endereço e porta do servidor
 server_addr = ("localhost", 12345)
-
-def end_of_file(data: bytes):
-    
-    return data == b'EOF'
 
 def ready(addr):
             socket_udp.sendto(b'1', addr)  # Avisa que pode receber mais
@@ -24,10 +20,15 @@ def request():
     envia_video = subprocess.Popen([caminho_vlc, '-', '--input-title-format', 'Streaming Video',
                                     '--network-caching=0', '--file-caching=0'],
                                     stdin=subprocess.PIPE)
+    vezes = 0
     try:
         while True:
             data, addr = socket_udp.recvfrom(BUFFER_SIZE)  # Novos dados
-            if end_of_file(data):  # Caso de arquivo vazio
+            vezes += 1
+            if data == b'EOF':  # Caso de arquivo vazio
+
+                envia_video.stdin.close()
+                envia_video.wait()
                 break
             
             vid_buff.append(data)
@@ -40,19 +41,20 @@ def request():
                 vid_buff.clear()  # Limpa o buffer depois de escrever
 
             # ready(addr)
-
+            print(f"\rPacote {vezes} recebido!", end="")
     except BrokenPipeError:
         print("\nErro: Broken pipe. O VLC fechou a conexão.")
     except Exception as e:
         print(f"\nErro inesperado: {e}")
 
-    envia_video.stdin.close()
-    envia_video.wait()
     return len(vid_buff)
 
 while True:
     message = input("Escolha o video [ 0 - BBB | 1 - Bear | 2 - WildLife ]:")
+    if message == "-1":
+        break
     if int(message) in range(VIDEO_LIST_SIZE):
+        
         socket_udp.sendto(message.encode(), server_addr)
 
         try:
@@ -66,4 +68,4 @@ while True:
         print(f"Valor {message} inválido! Tente novamente.")
 
     print(f"\nForam necessários {cont} pacotes para mandar todo o arquivo")
-    socket_udp.close()
+socket_udp.close()
