@@ -7,6 +7,9 @@ import subprocess
 import json
 
 BUFFER_SIZE = 1024
+VID_ARR_SIZE = 3
+EXIT = -1
+WAIT = -2
 video_array = ["./Conteudo/BigBuckBunny.mp4","./Conteudo/Bear.mp4","./Conteudo/Wildlife.mp4"]
 
 def get_vid_time(vid_path) -> int:
@@ -24,19 +27,29 @@ def get_bit_rate(vid_path):
     byte_por_segundo = int(os.path.getsize(vid_path)/get_vid_time(vid_path)) # byte / seg
     return byte_por_segundo 
 
+def wait_message():
+    
+    try:
+            message, addr = socket_udp.recvfrom(BUFFER_SIZE)
+            message = message.decode()
+            return message, addr
+    except socket.error as e:
+        print(f"Erro ao receber mensagem: {e}")
+
 try:
+    message = b''
     socket_udp = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # Cria um socket UDP
     endereco_servidor = ('localhost', 12345)  # Endereço e porta do servidor
     socket_udp.bind(endereco_servidor)  # Liga o socket ao endereço e porta
 
     print(f"Servidor UDP está rodando na porta {endereco_servidor[1]}")
     print("Aguardando mensagens...")
+
+    while True:
+
+        print("esperando por novos pedidos :)")
     
-    try:
-        # Recebendo mensagem
-        message, addr = socket_udp.recvfrom(BUFFER_SIZE)
-        message = message.decode()
-        print(f"Recebido: {message}")
+        message, addr = wait_message()
 
         # Pega tamanho do vídeo escolhido
         try:
@@ -68,8 +81,10 @@ try:
 
             print("\nArquivo enviado!")
 
-    except socket.error as e:
-        print(f"Erro ao receber mensagem: {e}")
+            # espera cliente fechar vlc
+            
+
+
 
 except socket.error as e:
     print(f"Erro ao criar ou ligar o socket: {e}")
