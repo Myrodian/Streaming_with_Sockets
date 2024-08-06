@@ -5,10 +5,7 @@ import subprocess
 import json
 import threading
 
-BUFFER_SIZE = 1024
-server = 'localhost'
-
-video_array = ["./Conteudo/BigBuckBunny.mp4", "./Conteudo/Bear.mp4", "./Conteudo/Wildlife.mp4"]
+BUFFER_SIZE = 1024 * 2
 
 def get_vid_time(vid_path) -> int:
     result = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'json', vid_path],
@@ -23,17 +20,20 @@ def get_bit_rate(vid_path):
 
 def wait_message():
     try:
-        message, addr = socket_UDP.recvfrom(BUFFER_SIZE)
+        # message, addr = socket_UDP.recvfrom(BUFFER_SIZE)
+        message= socket_TCP.recv(BUFFER_SIZE)
         message = message.decode()
-        return message, addr
+        # return message, addr
+        return message
     except socket.error as e:
-        print(f"Erro ao receber mensagem UDP: {e}")
-        return None, None
+        print(f"Erro ao receber mensagem TCP: {e}")
+        # return None, None
+        return None
 
-def handle_client_connection(client_socket):
+def handle_client_connection(specific_client):
     try:
         while True:
-            command = client_socket.recv(BUFFER_SIZE)
+            command = specific_client.recv(BUFFER_SIZE)
             if not command:
                 break
             print(f"Comando {command.decode()} recebido!")
@@ -42,9 +42,11 @@ def handle_client_connection(client_socket):
     except socket.error as e:
         print(f"Erro ao receber comando TCP: {e}")
     finally:
-        client_socket.close()
+        specific_client.close()
 
 if __name__ == "__main__":
+    video_array = ["./Conteudo/BigBuckBunny.mp4", "./Conteudo/Bear.mp4", "./Conteudo/Wildlife.mp4"]
+    server = 'localhost'
     try:
         # Cria sockets UDP e TCP
         socket_UDP = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -58,24 +60,17 @@ if __name__ == "__main__":
         socket_UDP.bind(addr_server_UDP)
         socket_TCP.bind(addr_server_TCP)
         socket_TCP.listen(5)
-
-        print(f"Servidor está rodando {addr_server_UDP[0]} na porta UDP {addr_server_UDP[1]} e na porta TCP {addr_server_TCP[1]}")
-
-        def start_command_thread():
-            while True:
-                client_socket, addr = socket_TCP.accept()
-                print(f"Cliente TCP conectado: {addr}")
-                client_thread = threading.Thread(target=handle_client_connection, args=(client_socket,))
-                client_thread.start()
-
-        # Inicia a thread para lidar com comandos TCP
-        command_thread = threading.Thread(target=start_command_thread)
-        command_thread.start()
+        print(f"Endereço servidor: [{addr_server_UDP[0]}]\nUDP port:[{addr_server_UDP[1]}] TCP port:[{addr_server_TCP[1]}]")
+        # isso daq trava o servidor
+        specific_client, addr_TCP = socket_TCP.accept()
+        print(f'Cliente TCP conectado: {addr_TCP}')
+        thread = threading.Thread(target=handle_client_connection, args=(specific_client,))
+        thread.start()
 
         while True:
-            print("Esperando por novos pedidos UDP :)")
-            message, addr = wait_message()
-
+            print("Esperando por novos pedidos UDP ;)")
+            # message, addr = wait_message()
+            message = wait_message()
             if message is None:
                 continue
 
@@ -95,17 +90,18 @@ if __name__ == "__main__":
                 while True:
                     bytes = arquivo.read(BUFFER_SIZE)
                     if not bytes:
-                        socket_UDP.sendto(b'EOF', addr)  # Marcador de fim de pacote
+                        socket_UDP.sendto(b'EOF', addr_TCP)  # Marcador de fim de pacote
                         break
 
-                    socket_UDP.sendto(bytes, addr)
+                    socket_UDP.sendto(bytes, addr_TCP)
                     vezes += 1
 
                     # Calcular o tempo de espera
                     time_to_wait = len(bytes) / byte_rate
                     time.sleep(time_to_wait)  # Pausa para controlar a vazão
                 print("\nArquivo enviado!")
-
+            
+            
     except socket.error as e:
         print(f"Erro ao criar ou ligar o socket: {e}")
     finally:
