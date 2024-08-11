@@ -1,3 +1,4 @@
+
 import socket
 import os
 import time
@@ -5,7 +6,12 @@ import subprocess
 import json
 import threading
 
-BUFFER_SIZE = 1024 * 2
+BUFFER_SIZE = 1024 * 2 
+
+# Eventos do cliente
+new_command = threading.Event()
+
+client_command = b''
 
 def get_vid_time(vid_path) -> int:
     result = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'json', vid_path],
@@ -18,10 +24,11 @@ def get_bit_rate(vid_path):
     byte_por_segundo = int(os.path.getsize(vid_path) / get_vid_time(vid_path))  # byte / seg
     return byte_por_segundo
 
+# Talvez podemos descontinuar essa funcao
 def wait_message():
     try:
         # message, addr = socket_UDP.recvfrom(BUFFER_SIZE)
-        message= socket_TCP.recv(BUFFER_SIZE)
+        message= socket_UDP.recvfrom(BUFFER_SIZE)
         message = message.decode()
         # return message, addr
         return message
@@ -30,14 +37,18 @@ def wait_message():
         # return None, None
         return None
 
-def handle_client_connection(specific_client):
+def client_command_thread(specific_client):
+    global client_command
     try:
+        # escuta novas instrucoes do cliente
         while True:
-            command = specific_client.recv(BUFFER_SIZE)
-            if not command:
-                break
-            print(f"Comando {command.decode()} recebido!")
-            if command == b'0':
+            client_command = specific_client.recv(BUFFER_SIZE)
+            # avisa que recebeu uma nova
+            new_command.set()
+            # quando o comando eh final
+            print(f"Comando {client_command.decode()} recebido!")
+            if client_command == b'0':
+                specific_client.close()
                 break
     except socket.error as e:
         print(f"Erro ao receber comando TCP: {e}")
@@ -48,6 +59,10 @@ if __name__ == "__main__":
     video_array = ["./Conteudo/BigBuckBunny.mp4", "./Conteudo/Bear.mp4", "./Conteudo/Wildlife.mp4"]
     server = 'localhost'
     try:
+
+        # Agente podia encapsular a criacao do udp e do tcp
+        # liga o UDP e em seguida o TCP com thread
+
         # Cria sockets UDP e TCP
         socket_UDP = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         socket_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
@@ -59,25 +74,32 @@ if __name__ == "__main__":
         # Liga cada socket ao seu respectivo endereço e porta
         socket_UDP.bind(addr_server_UDP)
         socket_TCP.bind(addr_server_TCP)
-        socket_TCP.listen(5)
+
+        # espera por conecoes
+        socket_TCP.listen()
+
         print(f"Endereço servidor: [{addr_server_UDP[0]}]\nUDP port:[{addr_server_UDP[1]}] TCP port:[{addr_server_TCP[1]}]")
-        # isso daq trava o servidor
+        
+        # aceita um pedido
         specific_client, addr_TCP = socket_TCP.accept()
+        
         print(f'Cliente TCP conectado: {addr_TCP}')
-        thread = threading.Thread(target=handle_client_connection, args=(specific_client,))
+        
+        # passa para a thread a responsabilidade de ouvir mensagens
+        thread = threading.Thread(target=client_command_thread, args=(specific_client,))
         thread.start()
 
-        while True:
+        while client_command != 0:
             print("Esperando por novos pedidos UDP ;)")
-            # message, addr = wait_message()
-            message = wait_message()
-            if message is None:
-                continue
-
+            
+            # Espera por um novo comando do cliente, Client_command recebeu um novo valor
+            print("esperando por novo comando")
+            new_command.wait()
+            print("comando recebido !")
             # Pega tamanho do vídeo escolhido
             try:
-                index = int(message)
-                index = index - 1
+                index = int(client_command) - 1
+
                 byte_rate = get_bit_rate(video_array[index])
                 print(f"Para o vídeo {video_array[index]}, a vazão necessária é de {byte_rate} bits por segundo")
             except FileNotFoundError:

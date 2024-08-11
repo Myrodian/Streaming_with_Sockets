@@ -37,7 +37,8 @@ def request():
 
 if __name__ == "__main__":
     server = 'localhost'
-    caminho_vlc = 'D:\\Arquivos_e_Programas\\VLC\\vlc.exe'
+    # caminho_vlc = 'D:\\Arquivos_e_Programas\\VLC\\vlc.exe'
+    caminho_vlc = "C:\\Program Files (x86)\\VideoLAN\\VLC\\vlc.exe"
     try:
         socket_UDP = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # Cria um socket UDP
         socket_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Cria um socket TCP
@@ -52,12 +53,12 @@ if __name__ == "__main__":
     
     while True:
         message = input("Escolha o video [ 1 - BBB | 2 - Bear | 3 - WildLife ]:")
-        if message == "0":
-            break
-        if int(message) in range(VIDEO_LIST_SIZE):  # Corrige a validação do intervalo
+        if int(message) in range(0, VIDEO_LIST_SIZE + 1):  # Corrige a validação do intervalo
             try:
                 # socket_UDP.sendto(message.encode(), addr_server_UDP)
                 socket_TCP.send(message.encode())
+                if message == "0":
+                    break
                 cont = request()  # Realiza a requisição
                 print(f"\nForam necessários {cont} pacotes para mandar todo o arquivo")
             except Exception as e:
