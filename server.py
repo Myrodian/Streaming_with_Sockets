@@ -6,7 +6,7 @@ import subprocess
 import json
 import threading
 
-BUFFER_SIZE = 1024 * 2 
+BUFFER_SIZE = 1024 * 2
 
 # Eventos do cliente
 new_command = threading.Event()
@@ -28,7 +28,7 @@ def get_bit_rate(vid_path):
 def wait_message():
     try:
         # message, addr = socket_UDP.recvfrom(BUFFER_SIZE)
-        message= socket_UDP.recvfrom(BUFFER_SIZE)
+        message, = socket_UDP.recvfrom(BUFFER_SIZE)
         message = message.decode()
         # return message, addr
         return message
@@ -42,14 +42,15 @@ def client_command_thread(specific_client):
     try:
         # escuta novas instrucoes do cliente
         while True:
-            client_command = specific_client.recv(BUFFER_SIZE)
-            # avisa que recebeu uma nova
-            new_command.set()
-            # quando o comando eh final
-            print(f"Comando {client_command.decode()} recebido!")
-            if client_command == b'0':
-                specific_client.close()
-                break
+            if client_command != b'':
+                client_command = specific_client.recv(BUFFER_SIZE)
+                # avisa que recebeu uma nova
+                new_command.set()
+                # quando o comando eh final
+                print(f"Comando {client_command.decode()} recebido!")
+                if client_command == b'0':
+                    specific_client.close()
+                    break
     except socket.error as e:
         print(f"Erro ao receber comando TCP: {e}")
     finally:
@@ -60,16 +61,19 @@ if __name__ == "__main__":
     server = 'localhost'
     try:
 
-        # Agente podia encapsular a criacao do udp e do tcp
+        # Agente podia encapsular a criacao do udp e do tcp separadamente
         # liga o UDP e em seguida o TCP com thread
 
         # Cria sockets UDP e TCP
         socket_UDP = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         socket_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
+        UDP_PORT = 12345
+        TCP_PORT = 54321
+
         # Define endereços e portas separadamente para UDP e TCP
-        addr_server_UDP = (server, 12345)
-        addr_server_TCP = (server, 54321)
+        addr_server_UDP = (server, UDP_PORT)
+        addr_server_TCP = (server, TCP_PORT)
 
         # Liga cada socket ao seu respectivo endereço e porta
         socket_UDP.bind(addr_server_UDP)
