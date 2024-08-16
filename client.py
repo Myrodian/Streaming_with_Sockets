@@ -6,13 +6,10 @@ BUFFER_SIZE = 1024*8
 
 server = 'localhost'
 
-# caminho_vlc = 'D:\\Arquivos_e_Programas\\VLC\\vlc.exe'
-caminho_vlc = "C:\\Program Files (x86)\\VideoLAN\\VLC\\vlc.exe"
+caminho_vlc = 'D:\\Arquivos_e_Programas\\VLC\\vlc.exe'
+# caminho_vlc = "C:\\Program Files (x86)\\VideoLAN\\VLC\\vlc.exe"
 
 def request( ):
-    
-    socket_UDP = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # Cria um socket UDP
-    # addr_server_UDP = (server, 12345)  # Endereço e porta do servidor UDP
     vid_buff = []
     envia_video = subprocess.Popen([caminho_vlc, '-', '--input-title-format', 'Streaming Video',
                                     '--network-caching=0', '--file-caching=0'],
@@ -49,12 +46,18 @@ def request( ):
 
 if __name__ == "__main__":
     try:
+        socket_UDP = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # Cria um socket UDP
+        addr_server_UDP = (server, 12345)  # Endereço e porta do servidor UDP
+        confirmacion = "confirmação"
+        socket_UDP.sendto(confirmacion.encode(), addr_server_UDP)
+        
         socket_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Cria um socket TCP
+        socket_TCP.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
 
         addr_server_TCP = (server, 54321)  # Endereço e porta do servidor TCP
 
         socket_TCP.connect(addr_server_TCP)
-
+        
     except Exception as e:
         print(f"\nErro inesperado: {e}")
     

@@ -53,6 +53,7 @@ def client_command_thread(specific_client):
                     break
     except socket.error as e:
         print(f"Erro ao receber comando TCP: {e}")
+        exit(0)
     finally:
         specific_client.close()
 
@@ -71,24 +72,21 @@ if __name__ == "__main__":
         UDP_PORT = 12345
         TCP_PORT = 54321
 
-        # Define endereços e portas separadamente para UDP e TCP
-        addr_server_UDP = (server, UDP_PORT)
-        addr_server_TCP = (server, TCP_PORT)
-
         # Liga cada socket ao seu respectivo endereço e porta
-        socket_UDP.bind(addr_server_UDP)
-        socket_TCP.bind(addr_server_TCP)
+        socket_UDP.bind((server, UDP_PORT))
+        socket_TCP.bind((server, TCP_PORT))
 
         # espera por conecoes
         socket_TCP.listen()
 
-        print(f"Endereço servidor: [{addr_server_UDP[0]}]\nUDP port:[{addr_server_UDP[1]}] TCP port:[{addr_server_TCP[1]}]")
+        print(f"Endereço servidor: [{server}]\nUDP port:[{UDP_PORT}] TCP port:[{TCP_PORT}]")
         
         # aceita um pedido
         specific_client, addr_TCP = socket_TCP.accept()
         
         print(f'Cliente TCP conectado: {addr_TCP}')
-        
+        _, addr_client_UDP = socket_UDP.recvfrom(BUFFER_SIZE)
+        print(f"cliente hospedado no endereço: {addr_client_UDP}")
         # passa para a thread a responsabilidade de ouvir mensagens
         thread = threading.Thread(target=client_command_thread, args=(specific_client,))
         thread.start()
@@ -116,10 +114,10 @@ if __name__ == "__main__":
                 while True:
                     bytes = arquivo.read(BUFFER_SIZE)
                     if not bytes:
-                        socket_UDP.sendto(b'EOF', addr_TCP)  # Marcador de fim de pacote
+                        socket_UDP.sendto(b'EOF', addr_client_UDP)  # Marcador de fim de pacote
                         break
 
-                    socket_UDP.sendto(bytes, addr_TCP)
+                    socket_UDP.sendto(bytes, addr_client_UDP)
                     vezes += 1
 
                     # Calcular o tempo de espera
