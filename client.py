@@ -6,19 +6,19 @@ BUFFER_SIZE = 1024*8
 
 server = 'localhost'
 
-caminho_vlc = 'D:\\Arquivos_e_Programas\\VLC\\vlc.exe'
-# caminho_vlc = "C:\\Program Files (x86)\\VideoLAN\\VLC\\vlc.exe"
+# caminho_vlc = 'D:\\Arquivos_e_Programas\\VLC\\vlc.exe'
+caminho_vlc = "C:\\Program Files (x86)\\VideoLAN\\VLC\\vlc.exe"
 
 def request( ):
     vid_buff = []
     envia_video = subprocess.Popen([caminho_vlc, '-', '--input-title-format', 'Streaming Video',
                                     '--network-caching=0', '--file-caching=0'],
                                     stdin=subprocess.PIPE)
-    print("Erro acontece apartir daqui")
+    
     vezes = 0
     try:
         while True:
-            data, = socket_UDP.recvfrom(BUFFER_SIZE)  # Novos dados # não passa daqui >:(2
+            data, addr = socket_UDP.recvfrom(BUFFER_SIZE)  # Novos dados # não passa daqui >:(2
             
             vezes += 1
             if data == b'EOF':  # Caso de arquivo vazio
@@ -33,30 +33,27 @@ def request( ):
                 piece = b''.join(vid_buff)
                 envia_video.stdin.write(piece)
                 envia_video.stdin.flush()  # Garante que os dados sejam enviados ao VLC
-                vid_buff.clear()  # Limpa o buffer depois de escrever
+                vid_buff.pop(0)  # remove a posição mais antiga
 
     except BrokenPipeError:
         print("\nErro: Broken pipe. O VLC fechou a conexão.")
     except Exception as e:
         print(f"\nErro inesperado: {e}")
-    finally:
-        socket_UDP.close()
     
     return vezes
 
 if __name__ == "__main__":
     try:
+        
+        socket_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Cria um socket TCP
+        socket_TCP.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        addr_server_TCP = (server, 54321)  # Endereço e porta do servidor TCP
+        socket_TCP.connect(addr_server_TCP)
+
         socket_UDP = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)  # Cria um socket UDP
         addr_server_UDP = (server, 12345)  # Endereço e porta do servidor UDP
         confirmacion = "confirmação"
         socket_UDP.sendto(confirmacion.encode(), addr_server_UDP)
-        
-        socket_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)  # Cria um socket TCP
-        socket_TCP.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
-
-        addr_server_TCP = (server, 54321)  # Endereço e porta do servidor TCP
-
-        socket_TCP.connect(addr_server_TCP)
         
     except Exception as e:
         print(f"\nErro inesperado: {e}")
@@ -76,3 +73,4 @@ if __name__ == "__main__":
             print(f"Valor {message} inválido! Tente novamente.")
 
     socket_TCP.close()
+    socket_UDP.close()

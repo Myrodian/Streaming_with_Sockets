@@ -37,33 +37,28 @@ def wait_message():
         # return None, None
         return None
 
+# canal tcp esta com problemas, comando nao recebido
 def client_command_thread(specific_client):
     global client_command
     try:
         # escuta novas instrucoes do cliente
         while True:
-            if client_command != b'':
-                client_command = specific_client.recv(BUFFER_SIZE)
-                # avisa que recebeu uma nova
-                new_command.set()
-                # quando o comando eh final
-                print(f"Comando {client_command.decode()} recebido!")
-                if client_command == b'0':
-                    specific_client.close()
-                    break
+            client_command = specific_client.recv(BUFFER_SIZE)
+            new_command.set() # avisa que recebeu uma nova
+
+            print(f"Comando {client_command.decode()} recebido!")
+            
+            if client_command == b'0':
+                specific_client.close()
+                break
     except socket.error as e:
         print(f"Erro ao receber comando TCP: {e}")
         exit(0)
-    finally:
-        specific_client.close()
 
 if __name__ == "__main__":
     video_array = ["./Conteudo/BigBuckBunny.mp4", "./Conteudo/Bear.mp4", "./Conteudo/Wildlife.mp4"]
     server = 'localhost'
     try:
-
-        # Agente podia encapsular a criacao do udp e do tcp separadamente
-        # liga o UDP e em seguida o TCP com thread
 
         # Cria sockets UDP e TCP
         socket_UDP = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
@@ -85,18 +80,18 @@ if __name__ == "__main__":
         specific_client, addr_TCP = socket_TCP.accept()
         
         print(f'Cliente TCP conectado: {addr_TCP}')
-        _, addr_client_UDP = socket_UDP.recvfrom(BUFFER_SIZE)
-        print(f"cliente hospedado no endereço: {addr_client_UDP}")
+        msg, addr_client_UDP = socket_UDP.recvfrom(BUFFER_SIZE)
+        print(f"cliente udp hospedado no endereço: {addr_client_UDP} ")
         # passa para a thread a responsabilidade de ouvir mensagens
         thread = threading.Thread(target=client_command_thread, args=(specific_client,))
         thread.start()
 
         while client_command != 0:
-            print("Esperando por novos pedidos UDP ;)")
             
             # Espera por um novo comando do cliente, Client_command recebeu um novo valor
             print("esperando por novo comando")
             new_command.wait()
+            new_command.clear() # libera evento
             print("comando recebido !")
             # Pega tamanho do vídeo escolhido
             try:
