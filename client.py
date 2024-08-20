@@ -10,8 +10,8 @@ ACTIONS = 3
 server = 'localhost'
 action = "2" # 0 - sair, 1 pausar, 2 rodar
 
-# caminho_vlc = 'D:\\Arquivos_e_Programas\\VLC\\vlc.exe'
-caminho_vlc = "C:\\Program Files (x86)\\VideoLAN\\VLC\\vlc.exe"
+caminho_vlc = 'D:\\Arquivos_e_Programas\\VLC\\vlc.exe'
+# caminho_vlc = "C:\\Program Files (x86)\\VideoLAN\\VLC\\vlc.exe"
 
 def create():
     try:
@@ -68,7 +68,7 @@ if __name__ == "__main__":
     socket_TCP, socket_UDP = create()
     
     while True:
-        message = input("Escolha o video [ -1 finalizar aplicacao | 1 - BBB | 2 - Bear | 3 - WildLife ]:")
+        message = input("Escolha o video [ 1 - BBB | 2 - Bear | 3 - WildLife ]:")
         if int(message) in range(-1, VIDEO_LIST_SIZE + 1):  # Corrige a validação do intervalo
             try:
                 socket_TCP.send(message.encode())
