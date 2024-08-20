@@ -6,13 +6,48 @@ import subprocess
 import json
 import threading
 
+UDP_PORT = 12345
+TCP_PORT = 54321
+HOST_IP = 'localhost'
 BUFFER_SIZE = 1024 * 2
+# STATE = 2
 
 # Eventos do cliente
 new_command = threading.Event()
+close = threading.Event()
 
-client_command = b''
-
+client_command = ''
+def create_TCP():
+    try:
+        socket_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
+        socket_TCP.setsockopt(socket.IPPROTO_TCP, socket.TCP_NODELAY, 1)
+        socket_TCP.bind((HOST_IP, TCP_PORT))
+        print("===========================SOCKET_TCP===========================")
+        print(f"Endereço servidor: [{HOST_IP}]\nTCP port:[{TCP_PORT}]")
+        socket_TCP.listen()
+        specific_client, addr_TCP = socket_TCP.accept()
+        print(f'Cliente TCP conectado: {addr_TCP}')
+        print("================================================================")
+    except socket.error as e:
+        print(f"Erro ao criar ou ligar o socket no TCP: {e}")
+    finally:
+        return specific_client, addr_TCP, socket_TCP
+    
+    
+def create_UDP():
+    try: 
+        socket_UDP = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
+        socket_UDP.bind((HOST_IP, UDP_PORT))
+        msg, addr_client_UDP = socket_UDP.recvfrom(BUFFER_SIZE)
+        print("===========================SOCKET_UDP===========================")
+        print(f"Endereço servidor: [{HOST_IP}]\nUDP port:[{UDP_PORT}]")
+        print(f"cliente UDP conectado: {addr_client_UDP}")
+        print("================================================================")
+    except socket.error as e:
+        print(f"Erro ao criar ou ligar o socket no UDP: {e}")
+    finally:
+        return addr_client_UDP, socket_UDP
+    
 def get_vid_time(vid_path) -> int:
     result = subprocess.run(['ffprobe', '-v', 'error', '-show_entries', 'format=duration', '-of', 'json', vid_path],
                             stdout=subprocess.PIPE, stderr=subprocess.STDOUT, text=True)
@@ -37,18 +72,17 @@ def wait_message():
         # return None, None
         return None
 
-# canal tcp esta com problemas, comando nao recebido
 def client_command_thread(specific_client):
     global client_command
     try:
         # escuta novas instrucoes do cliente
         while True:
-            client_command = specific_client.recv(BUFFER_SIZE)
-            new_command.set() # avisa que recebeu uma nova
-
-            print(f"Comando {client_command.decode()} recebido!")
-            
-            if client_command == b'0':
+            client_command = (specific_client.recv(BUFFER_SIZE)).decode()
+            new_command.set() # avisa que recebeu um novo comando
+            print(f"Comando [{client_command}] recebido!")
+            if client_command == '-1': # espera main finalizar
+                close.wait()
+                close.clear()
                 specific_client.close()
                 break
     except socket.error as e:
@@ -57,73 +91,60 @@ def client_command_thread(specific_client):
 
 if __name__ == "__main__":
     video_array = ["./Conteudo/BigBuckBunny.mp4", "./Conteudo/Bear.mp4", "./Conteudo/Wildlife.mp4"]
-    server = 'localhost'
-    try:
+    addr_client_UDP, socket_UDP = create_UDP()
+    specific_client, addr_TCP, socket_TCP = create_TCP()
+    # passa para a thread a responsabilidade de ouvir mensagens
+    recv_thread = threading.Thread(target=client_command_thread, args=(specific_client,))
+    recv_thread.start()
 
-        # Cria sockets UDP e TCP
-        socket_UDP = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
-        socket_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-
-        UDP_PORT = 12345
-        TCP_PORT = 54321
-
-        # Liga cada socket ao seu respectivo endereço e porta
-        socket_UDP.bind((server, UDP_PORT))
-        socket_TCP.bind((server, TCP_PORT))
-
-        # espera por conecoes
-        socket_TCP.listen()
-
-        print(f"Endereço servidor: [{server}]\nUDP port:[{UDP_PORT}] TCP port:[{TCP_PORT}]")
+    while client_command != "-1":
         
-        # aceita um pedido
-        specific_client, addr_TCP = socket_TCP.accept()
-        
-        print(f'Cliente TCP conectado: {addr_TCP}')
-        msg, addr_client_UDP = socket_UDP.recvfrom(BUFFER_SIZE)
-        print(f"cliente udp hospedado no endereço: {addr_client_UDP} ")
-        # passa para a thread a responsabilidade de ouvir mensagens
-        thread = threading.Thread(target=client_command_thread, args=(specific_client,))
-        thread.start()
+        # Espera por um novo comando do cliente, Client_command recebeu um novo valor
+        # print("esperando por novo comando")
+        new_command.wait()
+        index = int(client_command) - 1
+        new_command.clear() # libera evento
+        # print("comando recebido !")
+        # Pega tamanho do vídeo escolhido
+        try:
 
-        while client_command != 0:
-            
-            # Espera por um novo comando do cliente, Client_command recebeu um novo valor
-            print("esperando por novo comando")
-            new_command.wait()
-            new_command.clear() # libera evento
-            print("comando recebido !")
-            # Pega tamanho do vídeo escolhido
-            try:
-                index = int(client_command) - 1
+            byte_rate = get_bit_rate(video_array[index])
+            print(f"Para o vídeo {video_array[index]}, a vazão necessária é de {byte_rate} bits por segundo")
+        except FileNotFoundError:
+            print(f"Erro: Arquivo '{video_array[index]}' não encontrado.")
+        except OSError as e:
+            print(f"Erro ao acessar o arquivo: {e}")
 
-                byte_rate = get_bit_rate(video_array[index])
-                print(f"Para o vídeo {video_array[index]}, a vazão necessária é de {byte_rate} bits por segundo")
-            except FileNotFoundError:
-                print(f"Erro: Arquivo '{video_array[index]}' não encontrado.")
-            except OSError as e:
-                print(f"Erro ao acessar o arquivo: {e}")
+        with open(video_array[index], "rb") as arquivo: # abre video para leitura
+            vezes = 0
+            while client_command != "0": # se nao fechou -> play
 
-            with open(video_array[index], "rb") as arquivo:
-                vezes = 0
-                while True:
-                    bytes = arquivo.read(BUFFER_SIZE)
-                    if not bytes:
-                        socket_UDP.sendto(b'EOF', addr_client_UDP)  # Marcador de fim de pacote
-                        break
+                if client_command == "1":
+                    print("video pausado")
+                    # print("   ⏸   ")
+                    # print("    ▶   ")
+                    new_command.wait()
+                    new_command.clear()
+                bytes = arquivo.read(BUFFER_SIZE)
 
-                    socket_UDP.sendto(bytes, addr_client_UDP)
-                    vezes += 1
+                if not bytes:
+                    socket_UDP.sendto(b'EOF', addr_client_UDP)  # Marcador de fim de pacote
+                    break
 
-                    # Calcular o tempo de espera
-                    time_to_wait = len(bytes) / byte_rate
-                    time.sleep(time_to_wait)  # Pausa para controlar a vazão
-                print("\nArquivo enviado!")
-            
-            
-    except socket.error as e:
-        print(f"Erro ao criar ou ligar o socket: {e}")
-    finally:
-        socket_UDP.close()
-        socket_TCP.close()
-        print("Sockets fechados")
+                socket_UDP.sendto(bytes, addr_client_UDP)
+                vezes += 1
+
+                # Calcular o tempo de espera
+                time_to_wait = len(bytes) / byte_rate
+                time.sleep(time_to_wait)  # Pausa para controlar a vazão
+            if client_command == "0":
+                socket_UDP.sendto(b'EOF', addr_client_UDP)  # Marcador de fim de pacote
+                print("\n Interrupção de envio!")
+                break
+            print("\nArquivo enviado!")
+            client_command = "2" # reseta variavel de comando
+    close.set()
+    recv_thread.join()
+    socket_UDP.close()
+    socket_TCP.close()
+    print("Sockets fechados")
