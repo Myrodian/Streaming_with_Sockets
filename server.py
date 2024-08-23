@@ -10,13 +10,11 @@ UDP_PORT = 12345
 TCP_PORT = 54321
 HOST_IP = 'localhost'
 BUFFER_SIZE = 1024 * 2
-
+Lock = threading.Lock()
 # Eventos do cliente
 chossing_video = threading.Event()
 new_command = threading.Event()
-close = threading.Event()
 
-client_command = ''
 def create_TCP():
     try:
         socket_TCP = socket.socket(socket.AF_INET, socket.SOCK_STREAM) 
@@ -81,7 +79,7 @@ def wait_message():
 def client_command_thread(specific_client):
     global client_command
     global video
-    while True:
+    while True: 
         video = (specific_client.recv(BUFFER_SIZE)).decode()
         chossing_video.set() #ele avisa que a thread que usa o chossing_video pode continuar
         if int(video) > 0:
@@ -91,7 +89,9 @@ def client_command_thread(specific_client):
             break
         # a thread fica escutando enquanto o video é rodado
         while True:
+            Lock.acquire()
             client_command = (specific_client.recv(BUFFER_SIZE)).decode()
+            Lock.release()
             new_command.set() # ele avisa que a thread que usa o new_command pode continuar(troca de sinalizado para não-sinalizado)
             print(f"Comando [{client_command}] recebido!")
             if client_command == "0":
@@ -100,14 +100,16 @@ def client_command_thread(specific_client):
                 break
             if video == "0":
                 print("video == 0")
-                close.wait()
-                close.clear()
+                # close.wait()
+                # close.clear()
                 # specific_client.close()
-                print("ISSO AQUI ACONTECE?")
-                break
+                # print("ISSO AQUI ACONTECE?")
+                return
         continue
 
 if __name__ == "__main__":
+    global client_command
+    global video
     video_array = ["./Conteudo/BigBuckBunny.mp4", "./Conteudo/Bear.mp4", "./Conteudo/Wildlife.mp4"]
     
     addr_client_UDP, socket_UDP = create_UDP()
@@ -116,14 +118,13 @@ if __name__ == "__main__":
     # passa para a thread a responsabilidade de ouvir mensagens
     recv_thread = threading.Thread(target=client_command_thread, args=(specific_client,))
     recv_thread.start()
-
+    #vamo ter q usar a função seek() para mandar pra frente ou pra tras
     while True: 
         chossing_video.wait()
         index = int(video)-1
         chossing_video.clear() # libera evento
         if video == "-1":
             print("--------Você escolheu sair do Streaming!--------")
-            close.set()
             recv_thread.join()
             socket_UDP.close()
             socket_TCP.close()
@@ -142,14 +143,19 @@ if __name__ == "__main__":
                             print("-----------------Video enviado!-----------------")
                         else:
                             print("---------------Video interrompido---------------")
+                        Lock.acquire()
+                        client_command = "2"
+                        Lock.release()
                         break
+
                     else:
                         if client_command == "1":
-                            print("⏸Pause⏸")
+                            print("⏸ Pause ⏸")
                             while client_command == "1":
                                 new_command.wait()  # Aguarda por um novo comando
                                 new_command.clear()
-                            print("▶Play▶")
+                            if client_command == "2":
+                                print("▶ Play ▶")
                         bytes = arquivo.read(BUFFER_SIZE)
                         socket_UDP.sendto(bytes, addr_client_UDP)
                     
@@ -157,8 +163,10 @@ if __name__ == "__main__":
                         time_to_wait = len(bytes) / byte_rate
                         time.sleep(time_to_wait)  # Pausa para controlar a vazão
                         continue
+                Lock.acquire()
                 client_command = "2" # reseta variavel de comando
+                Lock.release()
                 arquivo.close()
-            continue
+        continue
                 
         
