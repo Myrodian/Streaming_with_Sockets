@@ -1,7 +1,7 @@
 import socket
 import subprocess
 import threading
-
+import time
 VIDEO_LIST_SIZE = 4
 BUFFER_SIZE = 1024*4
 ACTIONS = 3
@@ -35,13 +35,16 @@ def request():
     global action
     # vezes = 0
     vid_buff = []
-    envia_video = subprocess.Popen([caminho_vlc, '-', '--input-title-format', 'Streaming Video',
+    tocando = False
+    try:
+        t0 = time.time()
+        while True:
+            if not tocando and (time.time()- t0) >= 0.5:
+                envia_video = subprocess.Popen([caminho_vlc, '-', '--input-title-format', 'Streaming Video',
                                     '--network-caching=0', '--file-caching=0'],
                                     stdin=subprocess.PIPE)
-    try:
-        while True:
+                tocando = True
             data, _ = socket_UDP.recvfrom(BUFFER_SIZE)  # Novos dados # não passa daqui >:(2
-            
             # vezes += 1
             if data == b'EOF':  # Caso de arquivo vazio
                 envia_video.stdin.close()
@@ -51,11 +54,12 @@ def request():
             vid_buff.append(data)
 
             # Processa e escreve dados no VLC conforme são recebidos
-            while vid_buff:
-                piece = b''.join(vid_buff)
-                envia_video.stdin.write(piece)
-                envia_video.stdin.flush()  # Garante que os dados sejam enviados ao VLC
-                vid_buff.clear()  # remove a posição mais antiga
+            if tocando:
+                while vid_buff:
+                    piece = b''.join(vid_buff)
+                    envia_video.stdin.write(piece)
+                    envia_video.stdin.flush()  # Garante que os dados sejam enviados ao VLC
+                    vid_buff.clear()  # remove a posição mais antiga
 
     except BrokenPipeError:
         print("\nErro: Broken pipe. O VLC fechou a conexão.")
@@ -81,7 +85,7 @@ if __name__ == "__main__":
                 socket_TCP.send(action.encode()) # libera servidor para rodar
                 while True:
                     action = input("Ações [ 0 - cancelar | 1 - za wardo | 2 - tocar ]:")
-                    if int(action) in range( ACTIONS): 
+                    if int(action) in range(3): 
                         if action == "0":
                             socket_TCP.send(action.encode())
                             print(f"Ação:[{action}] - cancelar, voltando para menu!")

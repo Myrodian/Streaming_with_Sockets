@@ -10,7 +10,6 @@ UDP_PORT = 12345
 TCP_PORT = 54321
 HOST_IP = 'localhost'
 BUFFER_SIZE = 1024 * 2
-Lock = threading.Lock()
 # Eventos do cliente
 chossing_video = threading.Event()
 new_command = threading.Event()
@@ -89,9 +88,7 @@ def client_command_thread(specific_client):
             break
         # a thread fica escutando enquanto o video é rodado
         while True:
-            Lock.acquire()
             client_command = (specific_client.recv(BUFFER_SIZE)).decode()
-            Lock.release()
             new_command.set() # ele avisa que a thread que usa o new_command pode continuar(troca de sinalizado para não-sinalizado)
             print(f"Comando [{client_command}] recebido!")
             if client_command == "0":
@@ -143,11 +140,8 @@ if __name__ == "__main__":
                             print("-----------------Video enviado!-----------------")
                         else:
                             print("---------------Video interrompido---------------")
-                        Lock.acquire()
                         client_command = "2"
-                        Lock.release()
                         break
-
                     else:
                         if client_command == "1":
                             print("⏸ Pause ⏸")
@@ -156,16 +150,25 @@ if __name__ == "__main__":
                                 new_command.clear()
                             if client_command == "2":
                                 print("▶ Play ▶")
+                        
+                        elif client_command == "3":
+                            arquivo.seek(bytes_total + (byte_rate*5))
+                            bytes_total =+ (byte_rate*5)
+                        
+                        elif client_command == "4":
+                            arquivo.seek(bytes_total - (byte_rate*5))
+                            bytes_total =- (byte_rate*5)
+                        
                         bytes = arquivo.read(BUFFER_SIZE)
+                        bytes_total =+ bytes
+                        
                         socket_UDP.sendto(bytes, addr_client_UDP)
                     
                         # Calcular o tempo de espera
-                        time_to_wait = len(bytes) / byte_rate
+                        time_to_wait = (len(bytes) / byte_rate) * 0.85
                         time.sleep(time_to_wait)  # Pausa para controlar a vazão
                         continue
-                Lock.acquire()
                 client_command = "2" # reseta variavel de comando
-                Lock.release()
                 arquivo.close()
         continue
                 
