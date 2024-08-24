@@ -8,7 +8,7 @@ import threading
 
 UDP_PORT = 12345
 TCP_PORT = 54321
-HOST_IP = 'localhost'
+HOST_IP = '26.93.171.172'
 BUFFER_SIZE = 1024 * 2
 # Eventos do cliente
 chossing_video = threading.Event()
@@ -107,8 +107,7 @@ def client_command_thread(specific_client):
 if __name__ == "__main__":
     global client_command
     global video
-    video_array = ["./Conteudo/BigBuckBunny.mp4", "./Conteudo/Bear.mp4", "./Conteudo/Wildlife.mp4"]
-    
+    video_array = ["./Conteudo/BigBuckBunny.mp4", "./Conteudo/desenho1.mp4", "./Conteudo/Wildlife.mp4"]
     addr_client_UDP, socket_UDP = create_UDP()
     specific_client, addr_TCP, socket_TCP = create_TCP()
     
@@ -143,6 +142,7 @@ if __name__ == "__main__":
                         client_command = "2"
                         break
                     else:
+                        bytes_total = b''
                         if client_command == "1":
                             print("⏸ Pause ⏸")
                             while client_command == "1":
@@ -153,23 +153,21 @@ if __name__ == "__main__":
                         
                         elif client_command == "3":
                             arquivo.seek(bytes_total + (byte_rate*5))
-                            bytes_total =+ (byte_rate*5)
+                            bytes_total = bytes_total + (byte_rate*5)
                         
                         elif client_command == "4":
                             arquivo.seek(bytes_total - (byte_rate*5))
-                            bytes_total =- (byte_rate*5)
+                            bytes_total = bytes_total - (byte_rate*5)
                         
-                        bytes = arquivo.read(BUFFER_SIZE)
-                        bytes_total =+ bytes
+                        bytes_ = arquivo.read(BUFFER_SIZE)
+                        bytes_total = bytes_total + bytes_
                         
-                        socket_UDP.sendto(bytes, addr_client_UDP)
+                        socket_UDP.sendto(bytes_, addr_client_UDP)
                     
                         # Calcular o tempo de espera
-                        time_to_wait = (len(bytes) / byte_rate) * 0.85
+                        time_to_wait = (len(bytes_) / byte_rate) * 0.86
                         time.sleep(time_to_wait)  # Pausa para controlar a vazão
                         continue
                 client_command = "2" # reseta variavel de comando
                 arquivo.close()
         continue
-                
-        

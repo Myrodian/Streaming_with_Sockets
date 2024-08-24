@@ -3,7 +3,7 @@ import subprocess
 import threading
 import time
 VIDEO_LIST_SIZE = 4
-BUFFER_SIZE = 1024*4
+BUFFER_SIZE = 1024*8
 ACTIONS = 3
 # vezes = 0
 
@@ -39,7 +39,7 @@ def request():
     try:
         t0 = time.time()
         while True:
-            if not tocando and (time.time()- t0) >= 0.5:
+            if not tocando and (time.time()- t0) >= 1:
                 envia_video = subprocess.Popen([caminho_vlc, '-', '--input-title-format', 'Streaming Video',
                                     '--network-caching=0', '--file-caching=0'],
                                     stdin=subprocess.PIPE)
