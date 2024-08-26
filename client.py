@@ -39,7 +39,7 @@ def request():
     try:
         t0 = time.time()
         while True:
-            if not tocando and (time.time()- t0) >= 1:
+            if not tocando and (time.time()- t0) >= 0.3:
                 envia_video = subprocess.Popen([caminho_vlc, '-', '--input-title-format', 'Streaming Video',
                                     '--network-caching=0', '--file-caching=0'],
                                     stdin=subprocess.PIPE)

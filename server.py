@@ -8,7 +8,7 @@ import threading
 
 UDP_PORT = 12345
 TCP_PORT = 54321
-HOST_IP = '26.93.171.172'
+HOST_IP = '192.168.0.109'
 BUFFER_SIZE = 1024 * 2
 # Eventos do cliente
 chossing_video = threading.Event()
@@ -107,7 +107,7 @@ def client_command_thread(specific_client):
 if __name__ == "__main__":
     global client_command
     global video
-    video_array = ["./Conteudo/BigBuckBunny.mp4", "./Conteudo/desenho1.mp4", "./Conteudo/Wildlife.mp4"]
+    video_array = ["./Conteudo/BigBuckBunny.mp4", "./Conteudo/Sintel.mkv", "./Conteudo/Wildlife.mp4"]
     addr_client_UDP, socket_UDP = create_UDP()
     specific_client, addr_TCP, socket_TCP = create_TCP()
     
@@ -132,6 +132,7 @@ if __name__ == "__main__":
             with open(video_array[index], "rb") as arquivo: # abre video para leitura
                 if client_command == "2":
                     print("▶Play▶")
+                tax = 0.4
                 while True: # toca enquanto tiver bytes para enviar ou receber o comando 0 para sair
                     if not bytes or client_command == "0" or client_command == " " or client_command == "":
                         socket_UDP.sendto(b'EOF', addr_client_UDP)
@@ -164,8 +165,17 @@ if __name__ == "__main__":
                         
                         socket_UDP.sendto(bytes_, addr_client_UDP)
                     
+                        # ideal para o BBB é 0.89 um pc no cabo e um wifi
+                        # 
                         # Calcular o tempo de espera
-                        time_to_wait = (len(bytes_) / byte_rate) * 0.86
+                        
+
+                        if tax < 0.9:
+                            tax =+ 0.1
+                        else:
+                            tax = tax/2
+
+                        time_to_wait = (len(bytes_) / byte_rate) * tax
                         time.sleep(time_to_wait)  # Pausa para controlar a vazão
                         continue
                 client_command = "2" # reseta variavel de comando
