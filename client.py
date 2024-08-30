@@ -7,7 +7,7 @@ BUFFER_SIZE = 1024*8
 ACTIONS = 3
 # vezes = 0
 
-server = 'localhost'
+server = '192.168.0.105'
 action = "2" # 0 - sair, 1 pausar, 2 rodar
 
 caminho_vlc = 'D:\\Arquivos_e_Programas\\VLC\\vlc.exe'
@@ -39,7 +39,7 @@ def request():
     try:
         t0 = time.time()
         while True:
-            if not tocando and (time.time()- t0) >= 0.3:
+            if not tocando and (time.time()- t0) >= 0.5:
                 envia_video = subprocess.Popen([caminho_vlc, '-', '--input-title-format', 'Streaming Video',
                                     '--network-caching=0', '--file-caching=0'],
                                     stdin=subprocess.PIPE)

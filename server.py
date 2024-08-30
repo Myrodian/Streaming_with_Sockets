@@ -170,12 +170,12 @@ if __name__ == "__main__":
                         # Calcular o tempo de espera
                         
 
-                        if tax < 0.9:
-                            tax =+ 0.1
-                        else:
-                            tax = tax/2
+                        # if tax < 0.9:
+                        #     tax =+ 0.1
+                        # else:
+                        #     tax = tax/2
 
-                        time_to_wait = (len(bytes_) / byte_rate) * tax
+                        time_to_wait = (len(bytes_) / byte_rate) * 0.9
                         time.sleep(time_to_wait)  # Pausa para controlar a vazão
                         continue
                 client_command = "2" # reseta variavel de comando
